@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/pramodbindal/auto-labeler/pkg/apis/pramodbindal/v1alpha1"
+	pramodbindalv1alpha1 "github.com/pramodbindal/auto-labeler/pkg/client/listers/pramodbindal/v1alpha1"
 	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -17,6 +18,7 @@ import (
 type Reconciler struct {
 	kubeclient       k8s.Interface
 	deploymentLister v2.DeploymentLister
+	labelerInformer  pramodbindalv1alpha1.LabelerLister
 }
 
 func (r Reconciler) ReconcileKind(ctx context.Context, labeler *v1alpha1.Labeler) reconciler.Event {
@@ -47,24 +49,37 @@ func (r Reconciler) updateDeploymentLabels(ctx context.Context, deploy *v1.Deplo
 	logger := logging.FromContext(ctx)
 
 	logger.Infof("Updating Labels: %s", deploy.Name)
-	labelsMap := make(map[string]string)
-	for k, v := range deploy.Labels {
-		labelsMap[k] = v
-	}
-	logger.Infof("Updating Labels for labeler : %s\n", labeler.Name)
-	for k, v := range labeler.Spec.Labels {
-		labelsMap[k] = v
-	}
-	logger.Infof("Labels: %v", labelsMap)
-	metadata := deploy.GetObjectMeta()
+	////labelsMap := make(map[string]string)
+	////for k, v := range deploy.Labels {
+	////	labelsMap[k] = v
+	////}
+	////logger.Infof("Updating Labels for labeler : %s\n", labeler.Name)
+	////for k, v := range labeler.Spec.Labels {
+	////	labelsMap[k] = v
+	////}
+	//logger.Infof("Labels: %v", labelsMap)
 
-	updatedMetaData, err := json.Marshal(metadata)
+	patchData, err := json.Marshal(map[string]interface{}{
+		"metadata": map[string]interface{}{
+			"labels": labeler.Spec.Labels,
+		},
+	})
+
 	if err != nil {
+		logger.Errorf("failed to create patch data: %v", err)
 	}
 
-	patch := updatedMetaData
-	_, err = r.kubeclient.AppsV1().Deployments(deploy.Namespace).Patch(ctx, deploy.Name, types.StrategicMergePatchType, patch, metav1.PatchOptions{})
+	// Patch the Deployment
+	_, err = r.kubeclient.AppsV1().Deployments(deploy.Namespace).Patch(
+		context.TODO(),
+		deploy.Name,
+		types.MergePatchType, // Merge strategy
+		patchData,
+		metav1.PatchOptions{},
+	)
 	if err != nil {
-		logger.Errorf("Error updating Labels: %v", err)
+		logger.Errorf("failed to patch deployment: %v", err)
 	}
+
+	logger.Infof("Successfully patched deployment %s with new labels\n", deploy.Name)
 }

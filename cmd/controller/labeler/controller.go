@@ -22,6 +22,7 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 		// The client will be needed to create/delete Pods via the API.
 		kubeclient:       kubeclient.Get(ctx),
 		deploymentLister: deploymentInformer.Lister(),
+		labelerInformer:  labelerInformer.Lister(),
 	}
 	ctrlOptions := controller.Options{
 		Concurrency: 5,
