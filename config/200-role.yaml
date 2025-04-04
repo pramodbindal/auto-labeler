@@ -1,0 +1,40 @@
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: auto-labeler-role
+rules:
+  - apiGroups:
+      - "pramodbindal.dev"
+      - "apps"
+    resources:
+      - "labelers"
+      - "deployments"
+    verbs:
+      - get
+      - list
+      - watch
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: auto-labeler-cluster-role
+rules:
+  - apiGroups:
+      - "pramodbindal.dev"
+    resources:
+      - labelers
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - "apps"
+    resources:
+      - deployments
+    verbs:
+      - get
+      - list
+      - watch
+      - update
+

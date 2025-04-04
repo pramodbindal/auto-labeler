@@ -1,0 +1,23 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: label-controller
+  labels:
+    pramodbindal.dev/release: "devel"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: label-controller
+  template:
+    metadata:
+      labels:
+        app: label-controller
+        pramodbindal.dev/release: "devel"
+    spec:
+      serviceAccountName: pramodbindal
+      containers:
+        - name: controller
+          image: ko://github.com/pramodbindal/auto-labeler/cmd/controller
+  serviceName: label-controller

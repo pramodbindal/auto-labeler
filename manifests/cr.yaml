@@ -1,0 +1,16 @@
+apiVersion: pramodbindal.dev/v1alpha1
+kind: Labeler
+metadata:
+  name: example-labeler
+  namespace: default
+  labels:
+    pramodbindal.dev/release: devel
+spec:
+  targetResource: "deployment"
+  labels:
+    environment: "production"
+    label-manager: example-labeler
+    team: "devops"
+  annotations:
+    owner: "pramod"
+    managed-by: "custom-controller"
