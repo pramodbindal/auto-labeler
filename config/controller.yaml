@@ -20,4 +20,15 @@ spec:
       containers:
         - name: controller
           image: ko://github.com/pramodbindal/auto-labeler/cmd/controller
-  serviceName: label-controller
+          env:
+            - name: CONFIG_LOGGING_NAME
+              value: config-logging-labeler
+            - name: ENABLE_LEADER_ELECTION
+              value: "false"
+            - name: KUBERNETES_MIN_VERSION
+              value: "1.20.0"
+            - name: SYSTEM_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+#  serviceName: label-controller

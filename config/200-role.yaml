@@ -4,16 +4,23 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: auto-labeler-role
 rules:
+  # This is needed by leader election to run the controller in HA.
+  - apiGroups: [ "coordination.k8s.io" ]
+    resources: [ "leases" ]
+    verbs: [ "get", "list", "create", "update", "delete", "patch", "watch" ]
   - apiGroups:
       - "pramodbindal.dev"
       - "apps"
+      - ""
     resources:
       - "labelers"
       - "deployments"
+      - "configmaps"
     verbs:
       - get
       - list
       - watch
+      - patch
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
