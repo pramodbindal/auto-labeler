@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2017 The Kubernetes Authors.
+# Copyright 2020 The Knative Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,36 +18,36 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
-SCRIPT_ROOT=$(cd $SCRIPT_DIR/.. && pwd)
-#CODEGEN_PKG=${CODEGEN_PKG:-$(cd "${SCRIPT_ROOT}"; ls -d -1 ./vendor/k8s.io/code-generator 2>/dev/null || echo ../code-generator)}
-CODEGEN_PKG="${CODEGEN_PKG:-"${SCRIPT_DIR}"}"
-
-echo $SCRIPT_ROOT
-
+source $(dirname $0)/../vendor/knative.dev/hack/codegen-library.sh
 source "${CODEGEN_PKG}/kube_codegen.sh"
 
-THIS_PKG=$(go list -m)
-echo $THIS_PKG
+# If we run with -mod=vendor here, then generate-groups.sh looks for vendor files in the wrong place.
+export GOFLAGS=-mod=
 
-kube::codegen::gen_register \
-    --boilerplate "${SCRIPT_ROOT}/hack/boilerplate.go.txt" \
-    "${SCRIPT_ROOT}"
+echo "=== Update Codegen for $MODULE_NAME"
 
-kube::codegen::gen_client \
-    --with-watch \
-    --output-dir "${SCRIPT_ROOT}/pkg/client" \
-    --output-pkg "${THIS_PKG}/pkg/client" \
-    --boilerplate "${SCRIPT_ROOT}/hack/boilerplate.go.txt" \
-    "${SCRIPT_ROOT}/pkg/apis"
+# Compute _example hash for all configmaps.
+group "Generating checksums for configmap _example keys"
+
+#${REPO_ROOT_DIR}/hack/update-checksums.sh
+
+group "Kubernetes Codegen"
 
 kube::codegen::gen_helpers \
-    --boilerplate "${SCRIPT_ROOT}/hack/boilerplate.go.txt" \
-    "${SCRIPT_ROOT}/pkg/apis"
+  --boilerplate "${REPO_ROOT_DIR}/hack/custom-boilerplate.go.txt" \
+  "${REPO_ROOT_DIR}/pkg/apis"
 
-##
-### Knative Injection
-#bash ${SCRIPT_ROOT}/hack/generate-knative.sh "injection" \
-#  "${THIS_PKG}/pkg/client" "${THIS_PKG}/pkg/apis" \
-#  "pramodbindal:v1alpha1" \
-#  --go-header-file ${SCRIPT_ROOT}/hack/boilerplate.go.txt
+kube::codegen::gen_client \
+  --boilerplate "${REPO_ROOT_DIR}/hack/custom-boilerplate.go.txt" \
+  --output-dir "${REPO_ROOT_DIR}/pkg/client" \
+  --output-pkg "$MODULE_NAME/pkg/client" \
+  --with-watch \
+  "${REPO_ROOT_DIR}/pkg/apis"
+
+group "Knative Codegen"
+
+# Knative Injection
+${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh "injection" \
+  $MODULE_NAME/pkg/client $MODULE_NAME/pkg/apis \
+  "pramodbindal:v1alpha1" \
+  --go-header-file ${REPO_ROOT_DIR}/hack/custom-boilerplate.go.txt
